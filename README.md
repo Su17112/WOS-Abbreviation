@@ -420,3 +420,6 @@ if __name__ == '__main__':
     mywindow.show()
     sys.exit(app.exec_())
 ```
+
+# 下载链接
+[CSDN下载](https://download.csdn.net/download/weixin_42147967/86263496)
