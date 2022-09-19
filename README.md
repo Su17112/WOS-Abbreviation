@@ -39,10 +39,13 @@
                     'searchcategory1': '', 'searchcategory2': '', 'searchjcrkind': '', 'searchopenaccess': '', 'searchsort': 'relevance'}
 
         html = requests.post(url, data=urlencode(postData), headers=headers)
-        html = HTML(html.text)
-        ISSN = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[1]/text()')  # ISSN
-        LetPubJCR = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[2]/font/text()')  # LetPub JCR缩写
-
+        try:
+            html = HTML(html.text)
+            ISSN = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[1]/text()')  # ISSN
+            LetPubJCR = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[2]/font/text()')  # LetPub JCR缩写
+        except:
+            ISSN = ''
+            LetPubJCR = ''
         return ISSN[0] if ISSN else '', LetPubJCR[0] if LetPubJCR else ''
 ```
 该方法的返回值即是ISSN号以及LetPub上查到的缩写(这个缩写可能不准)。
@@ -299,6 +302,7 @@ class Ui_MainWindow(object):
 为了使用UI界面，在主文件(==main.py==)中继承了界面方法，并将按钮绑定了搜索函数，在搜索函数中使用上述的请求过程，来获取期刊缩写。
 同时，由于WOS是国外网站，请求太慢，为了避免主线程阻塞导致界面卡顿，搜索过程利用子线程实现。且搜索时禁用按钮放置同时发送过多请求。最后利用pyinstaller工具打包成exe程序(==pyinstaller -F -w -n WOS期刊缩写查询.exe main.py==)，代码如下：
 ```python
+# pyinstaller -F -w -n WOS期刊缩写查询.exe main.py
 from json import dumps, dump, load
 from os.path import exists
 from threading import Thread
@@ -326,20 +330,23 @@ class MyWindow(QMainWindow, Ui_MainWindow):
 
     def search(self):
         journal = self.lineEdit.text()
-        if journal:  # 如果有内容待查询
-            ISSN, LetPubJCR = self.getISSNfromLetPub(journal)  # 通过LetPub获得ISSN
-            if ISSN:
-                issn, eissn, abbreviatedTitle, isoAbbreviation = self.getWOSAbbreviation(ISSN)  # 通过WOS获得缩写
-            else:
-                issn, eissn, abbreviatedTitle, isoAbbreviation = '', '', '', ''
-            self.lineEdit_2.clear()
-            self.lineEdit_2.setText(issn)
-            self.lineEdit_3.clear()
-            self.lineEdit_3.setText(eissn)
-            self.lineEdit_5.clear()
-            self.lineEdit_5.setText(abbreviatedTitle)
-            self.lineEdit_4.clear()
-            self.lineEdit_4.setText(isoAbbreviation)
+        try:
+            if journal:  # 如果有内容待查询
+                ISSN, LetPubJCR = self.getISSNfromLetPub(journal)  # 通过LetPub获得ISSN
+                self.lineEdit_2.clear()
+                self.lineEdit_2.setText(ISSN)
+                if ISSN:
+                    issn, eissn, abbreviatedTitle, isoAbbreviation = self.getWOSAbbreviation(ISSN)  # 通过WOS获得缩写
+                else:
+                    issn, eissn, abbreviatedTitle, isoAbbreviation = '', '', '', ''
+                self.lineEdit_3.clear()
+                self.lineEdit_3.setText(eissn)
+                self.lineEdit_5.clear()
+                self.lineEdit_5.setText(abbreviatedTitle)
+                self.lineEdit_4.clear()
+                self.lineEdit_4.setText(isoAbbreviation)
+        except:
+            pass
         self.pushButton.setEnabled(True)
 
     def getISSNfromLetPub(self, journal: str) -> tuple:
@@ -353,10 +360,13 @@ class MyWindow(QMainWindow, Ui_MainWindow):
                     'searchcategory1': '', 'searchcategory2': '', 'searchjcrkind': '', 'searchopenaccess': '', 'searchsort': 'relevance'}
 
         html = requests.post(url, data=urlencode(postData), headers=headers)
-        html = HTML(html.text)
-        ISSN = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[1]/text()')  # ISSN
-        LetPubJCR = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[2]/font/text()')  # LetPub JCR缩写
-
+        try:
+            html = HTML(html.text)
+            ISSN = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[1]/text()')  # ISSN
+            LetPubJCR = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[2]/font/text()')  # LetPub JCR缩写
+        except:
+            ISSN = ''
+            LetPubJCR = ''
         return ISSN[0] if ISSN else '', LetPubJCR[0] if LetPubJCR else ''
 
     def getWOSAbbreviation(self, ISSN: str) -> tuple:
@@ -411,6 +421,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             isoAbbreviation = ''
 
         return issn, eissn, abbreviatedTitle, isoAbbreviation
+
 
 if __name__ == '__main__':
     import sys
