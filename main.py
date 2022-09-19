@@ -1,3 +1,4 @@
+# pyinstaller -F -w -n WOS期刊缩写查询.exe main.py
 from json import dumps, dump, load
 from os.path import exists
 from threading import Thread
@@ -25,20 +26,23 @@ class MyWindow(QMainWindow, Ui_MainWindow):
 
     def search(self):
         journal = self.lineEdit.text()
-        if journal:  # 如果有内容待查询
-            ISSN, LetPubJCR = self.getISSNfromLetPub(journal)  # 通过LetPub获得ISSN
-            if ISSN:
-                issn, eissn, abbreviatedTitle, isoAbbreviation = self.getWOSAbbreviation(ISSN)  # 通过WOS获得缩写
-            else:
-                issn, eissn, abbreviatedTitle, isoAbbreviation = '', '', '', ''
-            self.lineEdit_2.clear()
-            self.lineEdit_2.setText(issn)
-            self.lineEdit_3.clear()
-            self.lineEdit_3.setText(eissn)
-            self.lineEdit_5.clear()
-            self.lineEdit_5.setText(abbreviatedTitle)
-            self.lineEdit_4.clear()
-            self.lineEdit_4.setText(isoAbbreviation)
+        try:
+            if journal:  # 如果有内容待查询
+                ISSN, LetPubJCR = self.getISSNfromLetPub(journal)  # 通过LetPub获得ISSN
+                self.lineEdit_2.clear()
+                self.lineEdit_2.setText(ISSN)
+                if ISSN:
+                    issn, eissn, abbreviatedTitle, isoAbbreviation = self.getWOSAbbreviation(ISSN)  # 通过WOS获得缩写
+                else:
+                    issn, eissn, abbreviatedTitle, isoAbbreviation = '', '', '', ''
+                self.lineEdit_3.clear()
+                self.lineEdit_3.setText(eissn)
+                self.lineEdit_5.clear()
+                self.lineEdit_5.setText(abbreviatedTitle)
+                self.lineEdit_4.clear()
+                self.lineEdit_4.setText(isoAbbreviation)
+        except:
+            pass
         self.pushButton.setEnabled(True)
 
     def getISSNfromLetPub(self, journal: str) -> tuple:
@@ -52,10 +56,13 @@ class MyWindow(QMainWindow, Ui_MainWindow):
                     'searchcategory1': '', 'searchcategory2': '', 'searchjcrkind': '', 'searchopenaccess': '', 'searchsort': 'relevance'}
 
         html = requests.post(url, data=urlencode(postData), headers=headers)
-        html = HTML(html.text)
-        ISSN = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[1]/text()')  # ISSN
-        LetPubJCR = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[2]/font/text()')  # LetPub JCR缩写
-
+        try:
+            html = HTML(html.text)
+            ISSN = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[1]/text()')  # ISSN
+            LetPubJCR = html.xpath(f'//*[@id="yxyz_content"]/table[1]/tr[3]/td[2]/font/text()')  # LetPub JCR缩写
+        except:
+            ISSN = ''
+            LetPubJCR = ''
         return ISSN[0] if ISSN else '', LetPubJCR[0] if LetPubJCR else ''
 
     def getWOSAbbreviation(self, ISSN: str) -> tuple:
